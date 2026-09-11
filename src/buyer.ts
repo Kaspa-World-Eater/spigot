@@ -12,7 +12,7 @@
  * negotiated, nothing is refunded, and the bytes that never arrived were never paid for.
  */
 import { appendFileSync, existsSync, statSync, readFileSync, truncateSync } from 'node:fs';
-import { openSession, runBabel, blake3Hex, meterFor, type BuyerSession, type Offer, type State } from 'metered';
+import { openSession, runBabel, blake3Hex, meterFor, type BuyerSession, type Offer, type State } from 'metered-protocol';
 import { encodeAsk } from './ask.js';
 import type { Item } from './catalogue.js';
 import { CATALOGUE_PATH } from './seller.js';

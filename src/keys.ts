@@ -19,7 +19,7 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync, chmodSync } from 'n
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { publicKeyHex } from 'metered';
+import { publicKeyHex } from 'metered-protocol';
 
 const HOME = join(homedir(), '.spigot');
 

@@ -17,7 +17,7 @@ import { download, readCatalogue } from '../src/buyer.js';
 import { fileTerms, quote, kas, unpayable, payableFrom, DUST_FLOOR_SOMPI } from '../src/terms.js';
 import { identity } from '../src/keys.js';
 import { openAndFund, settleAndClose, fundingFor } from '../src/settle.js';
-import type { Offer } from 'metered';
+import type { Offer } from 'metered-protocol';
 
 const argv = process.argv.slice(2);
 const [command, ...rest] = argv;
@@ -166,7 +166,7 @@ const network = (cat: { terms: { network: string } }) =>
 /** ---------------------------------------------------------------- address */
 async function address(): Promise<void> {
   const me = identity(flag('role', 'buyer') === 'seller' ? 'seller' : 'buyer');
-  const { loadSdk } = await import('metered/chain');
+  const { loadSdk } = await import('metered-protocol/chain');
   const sdk = await loadSdk() as { PrivateKey: new (k: string) => { toKeypair: () => { toAddress: (n: unknown) => { toString: () => string } } }; NetworkId: new (n: string) => unknown };
   const net = new sdk.NetworkId(NETWORK.replace(/^kaspa:/, ''));
   console.log(`

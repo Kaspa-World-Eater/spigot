@@ -13,7 +13,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
-import { publicKeyHex, blake3Hex } from 'metered';
+import { publicKeyHex, blake3Hex } from 'metered-protocol';
 import { scan, lookup, costOf, NotForSale } from './catalogue.js';
 import { decodeAsk, encodeAsk, MalformedAsk } from './ask.js';
 import { serveSpigot, fileDeliver, AskPastTheEnd } from './seller.js';

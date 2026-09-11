@@ -21,8 +21,8 @@ import { join } from 'node:path';
 import {
   openCovenant, fundCovenant, settleClaim, closeCovenant, loadSdk,
   type Any, type Network,
-} from 'metered/chain';
-import { publicKeyHex, signState, requiredFunding, MIN_COVENANT_SOMPI, type Offer, type State } from 'metered';
+} from 'metered-protocol/chain';
+import { publicKeyHex, signState, requiredFunding, MIN_COVENANT_SOMPI, type Offer, type State } from 'metered-protocol';
 
 export class CannotSettle extends Error {}
 

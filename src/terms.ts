@@ -9,7 +9,7 @@
  * constraint on what is worth selling this way; a rounding meter would have been a hole in the
  * thing the protocol exists to prevent.
  */
-import { minimumTolerance, resolveMeter, type OfferTerms } from 'metered';
+import { minimumTolerance, resolveMeter, type OfferTerms } from 'metered-protocol';
 
 export const UNIT = 'net.bytes_delivered.v1';
 export const METER = 'octets';

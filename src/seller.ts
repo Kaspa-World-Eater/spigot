@@ -14,7 +14,7 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { openSync, readSync, closeSync } from 'node:fs';
 import { join } from 'node:path';
-import { MeteredService, meteredHandler, meterFor, type Deliver, type OfferTerms } from 'metered';
+import { MeteredService, meteredHandler, meterFor, type Deliver, type OfferTerms } from 'metered-protocol';
 import { decodeAsk } from './ask.js';
 import { lookup, type Item } from './catalogue.js';
 

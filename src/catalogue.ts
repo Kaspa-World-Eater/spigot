@@ -12,7 +12,7 @@
  */
 import { readdirSync, statSync, openSync, readSync, closeSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
-import { blake3Hex } from 'metered';
+import { blake3Hex } from 'metered-protocol';
 
 export interface Item {
   /** The catalogue key, and the only name a buyer may use. Always forward-slashed. */
