@@ -1,0 +1,24 @@
+{
+  "name": "spigot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pay-per-byte file delivery, metered by both sides and settled on Kaspa.",
+  "bin": {
+    "spigot": "./bin/spigot.ts"
+  },
+  "scripts": {
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
+    "serve": "tsx bin/spigot.ts serve",
+    "get": "tsx bin/spigot.ts get",
+    "check": "tsx tools/check.ts"
+  },
+  "dependencies": {
+    "metered": "file:../metered"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
