@@ -18,7 +18,7 @@ import { scan, lookup, costOf, NotForSale } from './catalogue.js';
 import { decodeAsk, encodeAsk, MalformedAsk } from './ask.js';
 import { serveSpigot, fileDeliver, AskPastTheEnd } from './seller.js';
 import { download, readCatalogue, DigestMismatch, DeliveryFailed } from './buyer.js';
-import { fileTerms, quote, UnsellableTerms } from './terms.js';
+import { fileTerms, quote, unpayable, payableFrom, DUST_FLOOR_SOMPI, UnsellableTerms } from './terms.js';
 
 const SELLER_SK = 'a1'.repeat(32);
 const BUYER_SK = 'b2'.repeat(32);
@@ -232,4 +232,22 @@ test('maxBabels is derived from the largest file, so no session runs out mid-dow
   assert.equal(terms.maxBabels, 5, 'ceil(5000 / 1024)');
   assert.equal(terms.toleranceAbs, 0, 'the meter is exact, so there is nothing to absorb');
   assert.equal(quote(5000, terms), 5000);
+});
+
+test('THE DUST FLOOR: a seller priced too low delivers the bytes and is paid nothing', () => {
+  // Not a theory. Selling a 200,008-byte file at one sompi a byte settled and closed on testnet-10
+  // with a SINGLE output -- the whole 200,008 sompi folded into the buyer's refund, because KIP-9
+  // will not carry an output that small. The download worked, both sides agreed the bill, the
+  // close was valid, and the seller earned nothing.
+  const terms = fileTerms({ network: NETWORK, sompiPerByte: 1, babelBytes: 65536, largestFileBytes: 200008 });
+  const items = [{ path: 'small.bin', bytes: 200008 }, { path: 'big.bin', bytes: 3_000_000 }];
+
+  assert.deepEqual(unpayable(items, terms).map((i) => i.path), ['small.bin']);
+  assert.equal(payableFrom(terms), DUST_FLOOR_SOMPI, 'at 1 sompi/byte the floor IS the byte count');
+
+  // Raising the price clears it, which is the other way out and the one the live re-run used:
+  // the same file at 20 sompi/byte earned 4,000,160 and was paid as its own output.
+  const richer = fileTerms({ network: NETWORK, sompiPerByte: 20, babelBytes: 65536, largestFileBytes: 200008 });
+  assert.deepEqual(unpayable(items, richer), []);
+  assert.equal(quote(200008, richer), 4000160);
 });

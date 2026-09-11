@@ -69,3 +69,31 @@ export const quote = (bytes: number, terms: OfferTerms): number => bytes * terms
 
 /** Sompi as KAS, for printing only. Never used in an amount that is signed or settled. */
 export const kas = (sompi: number): string => (sompi / 1e8).toFixed(8).replace(/0+$/, '0');
+
+/**
+ * The smallest payout Kaspa will carry as its own output.
+ *
+ * KIP-9 prices a transaction by storage mass, `10^12/out1 + 10^12/out2 - 10^12/in`, and a small
+ * output costs more mass than the 500,000 limit permits. The covenant's answer is to fold a payout
+ * this small into the other party's output rather than demand one consensus cannot create -- so
+ * the money is not lost, but it goes to the BUYER. The seller delivered the bytes and earned
+ * nothing.
+ *
+ * Measured, not chosen: proven on testnet-10 by selling a 200,008-byte file at one sompi a byte
+ * and watching the whole earning fold into the refund.
+ */
+export const DUST_FLOOR_SOMPI = 2_600_000;
+
+/**
+ * The catalogue entries a seller cannot actually be paid for at this price.
+ *
+ * Worth saying out loud at `serve` time, because the failure is silent and asymmetric: the
+ * download works, both sides agree the bill, the close is valid, and the seller is simply not
+ * paid. At one sompi a byte a file must be about 2.6 MB before it clears the floor.
+ */
+export const unpayable = (items: { path: string; bytes: number }[], terms: OfferTerms) =>
+  items.filter((i) => quote(i.bytes, terms) < DUST_FLOOR_SOMPI);
+
+/** The smallest file worth selling at this price, in bytes. */
+export const payableFrom = (terms: OfferTerms): number =>
+  Math.ceil(DUST_FLOOR_SOMPI / terms.unitPriceSompi);

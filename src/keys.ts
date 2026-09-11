@@ -5,10 +5,15 @@
  * generated a fresh key on every start would be a different seller to every buyer, and a buyer
  * that did the same could never be recognised across sessions.
  *
- * These are ordinary secp256k1 secrets held in plain files, mode 0600, outside any repository --
- * the same shape as an SSH key and with the same warning attached. They are NOT a wallet: no
- * settlement key is stored here, because losing this file should cost an identity and never
- * coins.
+ * THESE KEYS ARE ALSO WALLETS, and an earlier version of this comment said the opposite -- that
+ * losing one would cost an identity and never coins. Reading the covenant showed that to be
+ * false and dangerous: `expire` requires its outputs to be `P2PK(buyer)` and `P2PK(provider)` and
+ * admits a closing signature only from those same two keys. So the seller is paid to its session
+ * key, the buyer is refunded to its own, and either key is worth exactly what has flowed through
+ * it.
+ *
+ * They are ordinary secp256k1 secrets in plain files, mode 0600, outside any repository -- the
+ * same shape as an SSH key, and now with the same warning that a wallet carries.
  */
 import { mkdirSync, readFileSync, writeFileSync, existsSync, chmodSync } from 'node:fs';
 import { homedir } from 'node:os';

@@ -9,11 +9,12 @@ that actually landed.
 
 ```bash
 # seller
-spigot serve ./wares --price 1
+spigot serve ./wares --price 20
 
 # buyer
+spigot address                      # fund this, once
 spigot catalogue http://seller:8402
-spigot get http://seller:8402 dataset.tar.zst --out ./dataset.tar.zst
+spigot get http://seller:8402 dataset.tar.zst --settle
 ```
 
 It is built on [metered](https://github.com/kaspahttp402/metered-protocol), a payment protocol for
@@ -73,24 +74,43 @@ would have been a hole in the one thing this is for.
 | `src/ask.ts` | the request grammar — a path and an offset, validated not trusted |
 | `src/seller.ts` | the `Deliver` that serves byte ranges, and the HTTP server |
 | `src/buyer.ts` | pull babels until whole, then check the digest |
-| `src/terms.ts` | the Offer terms, and why the unit is bytes |
-| `bin/spigot.ts` | `serve`, `catalogue`, `get` |
+| `src/terms.ts` | the Offer terms, the dust floor, and why the unit is bytes |
+| `src/settle.ts` | fund a covenant, post the agreed State, pay everyone out |
+| `src/keys.ts` | the two identities — which are also the two wallets |
+| `bin/spigot.ts` | `serve`, `catalogue`, `get`, `address` |
 
 ```bash
 npm install
 npm test
 ```
 
+## The dust floor, which decides what is worth selling
+
+Kaspa's KIP-9 storage-mass rule will not carry a very small transaction output. If a seller's
+earnings for a whole file come to less than **2,600,000 sompi**, the covenant folds them into the
+buyer's refund rather than demanding an output consensus cannot create — the download works, both
+sides agree the bill, the close is valid, and **the seller is paid nothing**.
+
+That is not a theory. Selling a 200,008-byte file at one sompi a byte settled and closed on
+testnet-10 with a single output, and the whole earning went back to the buyer. `spigot serve` now
+says so up front, and names the size a file must reach at your price.
+
+Two ways out: price higher, or sell bigger files. At 1 sompi/byte a file clears the floor from
+about 2.6 MB; at 20 sompi/byte, from 130 KB.
+
 ## Status
 
-The delivery half runs end to end: a real catalogue, real byte ranges, both sides counting, mutual
-signatures on every slice, and a verified digest at the end. Proven on a 200 KB binary file
-delivered in 4 babels for exactly 200,008 sompi, byte-identical to the source, and on a resumed
-download that paid only for its remaining 130,008 bytes.
+Runs end to end, including the money. On testnet-10:
 
-**On-chain settlement is not yet wired in.** A session produces a signed final State that the
-metered covenant is built to settle; connecting that is the next piece. Until then the accounting
-is complete and mutually signed, but nothing has moved on chain.
+- A 200,008-byte binary file bought in **4 babels** for exactly **200,008 sompi**, delivered
+  byte-identical to the source.
+- A download interrupted at 70,000 bytes and resumed — it paid for its remaining **130,008 bytes**
+  and nothing for what it already held.
+- The same file at 20 sompi/byte **settled and closed on chain**: settle `478d6ede`, close
+  `a03b7c9f`, two outputs — **0.04000160 KAS to the seller**, the remainder refunded to the buyer.
+  Balances confirmed on chain afterwards.
+
+Not on mainnet, deliberately: the covenant's contract language is unaudited.
 
 ## Licence
 

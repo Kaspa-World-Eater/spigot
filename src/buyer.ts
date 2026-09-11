@@ -12,7 +12,7 @@
  * negotiated, nothing is refunded, and the bytes that never arrived were never paid for.
  */
 import { appendFileSync, existsSync, statSync, readFileSync, truncateSync } from 'node:fs';
-import { openSession, runBabel, blake3Hex, meterFor, type BuyerSession } from 'metered';
+import { openSession, runBabel, blake3Hex, meterFor, type BuyerSession, type Offer, type State } from 'metered';
 import { encodeAsk } from './ask.js';
 import type { Item } from './catalogue.js';
 import { CATALOGUE_PATH } from './seller.js';
@@ -22,7 +22,10 @@ export class DigestMismatch extends Error {}
 
 export interface Catalogue {
   items: Item[];
-  terms: { unit: string; meter: string; unitPriceSompi: number; babelUnits: number; network: string };
+  terms: {
+    unit: string; meter: string; unitPriceSompi: number; babelUnits: number;
+    network: string; responseWindowDaa: number;
+  };
 }
 
 export interface Receipt {
@@ -32,6 +35,8 @@ export interface Receipt {
   sompiSpent: number;
   babels: number;
   digest: string;
+  /** The last agreed State and both signatures over it -- everything settlement needs. */
+  settlement: { state: State; providerSig: string; buyerSig: string } | null;
 }
 
 /** Read what a seller has for sale. Unpaid, because deciding to buy requires seeing the price. */
@@ -66,14 +71,24 @@ export async function download(
   item: Item,
   out: string,
   expectedNetwork?: string,
-): Promise<{ receipt: Receipt; session: BuyerSession }> {
+  /**
+   * Run once, after the Offer exists and before the first babel.
+   *
+   * THE ORDER IS FORCED. A covenant's address is derived from the Offer's own session id, so it
+   * cannot be funded before the session is opened -- and a seller has no reason to deliver against
+   * funds that are not yet there. Anything that wants to pay on chain hooks in here.
+   */
+  afterOpen?: (offer: Offer) => Promise<void>,
+): Promise<{ receipt: Receipt; session: BuyerSession; offer: Offer }> {
   const cat = await readCatalogue(base);
   const meter = meterFor(cat.terms.meter, cat.terms.unit);
-  const { session } = await openSession(base, buyerSk, meter, expectedNetwork);
+  const { offer, session } = await openSession(base, buyerSk, meter, expectedNetwork);
+  if (afterOpen) await afterOpen(offer);
 
   const start = resumeFrom(out, item);
   let offset = start;
   let babels = 0;
+  let last: { state: State; providerSig: string; buyerSig: string } | null = null;
 
   while (offset < item.bytes) {
     const outcome = await runBabel(base, session, encodeAsk({ path: item.path, offset }));
@@ -83,6 +98,7 @@ export async function download(
     appendFileSync(out, outcome.content);
     offset += outcome.content.length;
     babels += 1;
+    last = { state: outcome.state, providerSig: outcome.providerSig, buyerSig: outcome.buyerSig };
   }
 
   // THE CHECK THE PROTOCOL CANNOT MAKE. metered proves each babel is the bytes both sides agreed
@@ -104,8 +120,10 @@ export async function download(
       sompiSpent: session.spentSompi,
       babels,
       digest,
+      settlement: last,
     },
     session,
+    offer,
   };
 }
 
