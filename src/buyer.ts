@@ -12,7 +12,7 @@
  * negotiated, nothing is refunded, and the bytes that never arrived were never paid for.
  */
 import { appendFileSync, existsSync, statSync, readFileSync, truncateSync } from 'node:fs';
-import { openSession, runBabel, blake3Hex, meterFor, type BuyerSession, type Offer, type State } from 'metered-protocol';
+import { openSession, runBabel, blake3Hex, meterFor, type BuyerSession, type Offer, type State, type ChannelProposal } from 'metered-protocol';
 import { encodeAsk } from './ask.js';
 import type { Item } from './catalogue.js';
 import { CATALOGUE_PATH } from './seller.js';
@@ -26,6 +26,7 @@ export interface Catalogue {
     unit: string; meter: string; unitPriceSompi: number; babelUnits: number;
     network: string; responseWindowDaa: number;
   };
+  sellerPubkey: string;
 }
 
 export interface Receipt {
@@ -79,10 +80,12 @@ export async function download(
    * funds that are not yet there. Anything that wants to pay on chain hooks in here.
    */
   afterOpen?: (offer: Offer) => Promise<void>,
+  /** A kaspa-x402 channel this buyer holds with the seller. Vouchers then travel with every countersign. */
+  channel?: ChannelProposal,
 ): Promise<{ receipt: Receipt; session: BuyerSession; offer: Offer }> {
   const cat = await readCatalogue(base);
   const meter = meterFor(cat.terms.meter, cat.terms.unit);
-  const { offer, session } = await openSession(base, buyerSk, meter, expectedNetwork);
+  const { offer, session } = await openSession(base, buyerSk, meter, expectedNetwork, undefined, channel);
   if (afterOpen) await afterOpen(offer);
 
   const start = resumeFrom(out, item);

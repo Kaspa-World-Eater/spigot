@@ -14,7 +14,7 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { openSync, readSync, closeSync } from 'node:fs';
 import { join } from 'node:path';
-import { MeteredService, meteredHandler, meterFor, type Deliver, type OfferTerms } from 'metered-protocol';
+import { MeteredService, meteredHandler, meterFor, type Deliver, type OfferTerms, type ServiceOptions } from 'metered-protocol';
 import { decodeAsk } from './ask.js';
 import { lookup, type Item } from './catalogue.js';
 
@@ -66,6 +66,10 @@ export interface SpigotOptions {
   terms: OfferTerms;
   providerSk: string;
   providerPubkey: string;
+  /** How to verify a channel a buyer proposes (SPEC.md 3.5). Absent, no channel is billed against. */
+  channelFor?: ServiceOptions['channelFor'];
+  /** Where sessions -- and the vouchers they hold -- survive a restart. Absent, they do not. */
+  sessions?: ServiceOptions['sessions'];
 }
 
 /**
@@ -81,12 +85,16 @@ export function serveSpigot(opts: SpigotOptions): { server: Server; service: Met
     providerPubkey: opts.providerPubkey,
     meter: meterFor(opts.terms.meter, opts.terms.unit),
     deliver: fileDeliver(opts.root, opts.items),
+    ...(opts.channelFor ? { channelFor: opts.channelFor } : {}),
+    ...(opts.sessions ? { sessions: opts.sessions } : {}),
   });
 
   const metered = meteredHandler({ service });
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     if (req.method === 'GET' && (req.url ?? '') === CATALOGUE_PATH) {
-      const body = JSON.stringify({ items: opts.items, terms: opts.terms });
+      // The seller's key is in the catalogue so a buyer can open a channel with it BEFORE any
+      // session exists -- the channel is the buyer's money, and it is the buyer that opens it.
+      const body = JSON.stringify({ items: opts.items, terms: opts.terms, sellerPubkey: opts.providerPubkey });
       res.writeHead(200, { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) });
       res.end(body);
       return;

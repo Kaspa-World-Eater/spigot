@@ -234,11 +234,11 @@ test('maxBabels is derived from the largest file, so no session runs out mid-dow
   assert.equal(quote(5000, terms), 5000);
 });
 
-test('THE DUST FLOOR: a seller priced too low delivers the bytes and is paid nothing', () => {
-  // Not a theory. Selling a 200,008-byte file at one sompi a byte settled and closed on testnet-10
-  // with a SINGLE output -- the whole 200,008 sompi folded into the buyer's refund, because KIP-9
-  // will not carry an output that small. The download worked, both sides agreed the bill, the
-  // close was valid, and the seller earned nothing.
+test('THE DUST FLOOR: a seller priced too low is worth less than a claim fee', () => {
+  // On the kaspa-x402 rail a claim spends a fee and leaves a positive successor, so a total below
+  // the floor is not worth claiming: the seller pays more to collect than it would receive. The
+  // arithmetic is the same guard the old covenant enforced, now a claim-economics fact rather
+  // than a settlement shape. A file must clear the floor to be worth selling by the byte.
   const terms = fileTerms({ network: NETWORK, sompiPerByte: 1, babelBytes: 65536, largestFileBytes: 200008 });
   const items = [{ path: 'small.bin', bytes: 200008 }, { path: 'big.bin', bytes: 3_000_000 }];
 

@@ -14,7 +14,7 @@
     "check": "tsx tools/check.ts"
   },
   "dependencies": {
-    "metered-protocol": "^1.0.0"
+    "metered-protocol": "file:../metered-protocol/metered-protocol-2.0.0.tgz"
   },
   "devDependencies": {
     "@types/node": "^22.20.2",

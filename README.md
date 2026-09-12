@@ -12,9 +12,12 @@ that actually landed.
 spigot serve ./wares --price 20
 
 # buyer
-spigot address                      # fund this, once
-spigot catalogue http://seller:8402
-spigot get http://seller:8402 dataset.tar.zst --settle
+spigot channel open http://seller:8402 --escrow 0.5   # once, per seller
+spigot get http://seller:8402 dataset.tar.zst --pay   # bills the channel
+spigot refund <covenantId>                            # reclaim the rest, after the timeout
+
+# seller
+spigot claim <covenantId>                             # collect what the vouchers cover
 ```
 
 It is built on [metered](https://github.com/kaspahttp402/metered-protocol), a payment protocol for
@@ -98,19 +101,31 @@ says so up front, and names the size a file must reach at your price.
 Two ways out: price higher, or sell bigger files. At 1 sompi/byte a file clears the floor from
 about 2.6 MB; at 20 sompi/byte, from 130 KB.
 
+## Settlement: the kaspa-x402 rail
+
+spigot does not hold its own escrow. It settles through the **kaspa-x402** reference
+implementation's `batch-settlement` channel ([kaspa-x402.org](https://kaspa-x402.org)) via
+[metered-protocol](https://github.com/kaspahttp402/metered-protocol)'s rail.
+
+A buyer opens one escrow **channel** with a seller, then buys any number of files against it. After
+each babel the buyer signs a *voucher* for the agreed cumulative total, which travels with its
+countersignature — so the seller is never owed for a slice it has not been paid for. The seller
+claims what the vouchers cover whenever it likes; the buyer refunds the remainder after the
+channel's timeout. metered decides each bill by two-sided count; the rail pays it.
+
 ## Status
 
-Runs end to end, including the money. On testnet-10:
+Runs end to end on testnet-10, through the kaspa-x402 escrow:
 
-- A 200,008-byte binary file bought in **4 babels** for exactly **200,008 sompi**, delivered
-  byte-identical to the source.
-- A download interrupted at 70,000 bytes and resumed — it paid for its remaining **130,008 bytes**
-  and nothing for what it already held.
-- The same file at 20 sompi/byte **settled and closed on chain**: settle `478d6ede`, close
-  `a03b7c9f`, two outputs — **0.04000160 KAS to the seller**, the remainder refunded to the buyer.
-  Balances confirmed on chain afterwards.
+- A buyer opened a **0.2 KAS channel** (genesis `b518a530…`), bought a **200,008-byte** file billed
+  to it in 4 babels for **0.04000160 KAS**, delivered byte-identical to the source.
+- Every babel was **vouchered with its countersignature**; the seller **claimed** `3422d275…`,
+  taking 0.035 KAS (the bill less the claim fee) with **0.16 KAS left in the channel** to spend or
+  refund.
+- A seller that under-delivered **cannot** claim the reservation: refused by the builder, the
+  accounting, and the escrow script.
 
-Not on mainnet, deliberately: the covenant's contract language is unaudited.
+Not on mainnet, deliberately: the kaspa-x402 escrow is alpha and unaudited for mainnet funds.
 
 ## Licence
 
