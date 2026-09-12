@@ -2,6 +2,8 @@
 
 **Sell files by the byte. The buyer pays for the bytes that arrived, and counts them itself.**
 
+**→ [Read what spigot is, in one page](https://kaspahttp402.github.io/spigot/)** — the idea, how a purchase works, and why the seller cannot overstate what it sent.
+
 Every way of selling a download today bills you for what the server says it sent. If the transfer
 stalls at 60%, the bill is a conversation. `spigot` removes the conversation: the buyer authorises
 one slice at a time, both sides count every byte independently, and the money follows the bytes
