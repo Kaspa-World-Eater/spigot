@@ -11,7 +11,10 @@ import { dirname, join } from 'node:path';
 import { truncatedIds } from './pinned.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const docs = ['README.md', ...readdirSync(join(root, 'docs')).filter((f) => /\.(md|html)$/.test(f)).map((f) => join('docs', f))];
+// Every root markdown file, not just README: kaspa-depin's copy of this gate scanned only
+// README and docs/, and four cut-short ids sat unseen in its STATUS.md until 2026-09-22.
+const md = (dir: string) => readdirSync(join(root, dir)).filter((f) => /\.(md|html)$/.test(f)).map((f) => (dir === '.' ? f : join(dir, f)));
+const docs = [...md('.'), ...md('docs')];
 
 test('a prefix plus an ellipsis is caught; a whole id and ordinary prose are not', () => {
   const full = 'a'.repeat(64);
