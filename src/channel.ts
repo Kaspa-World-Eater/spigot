@@ -17,13 +17,12 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { ChannelProposal } from 'metered-protocol';
 import {
-  openChannel, claimChannel, refundChannel, channelVerifier, proposalFor, redeemScriptFor, loadSdk, awaitUtxo,
+  openChannel, claimChannel, refundChannel, channelVerifier, proposalFor, redeemScriptFor, loadSdk, awaitUtxo, spendWallet,
   type Channel, type Network, type Any,
 } from 'metered-protocol/rail';
 import type { Voucher } from 'metered-protocol';
 
 const HOME = join(homedir(), '.spigot', 'channels');
-const CARVE_FEE = 250_000n;
 export const GENESIS_FEE = 500_000n;
 export const CLAIM_FEE = 500_000n;
 export const REFUND_FEE = 500_000n;
@@ -68,21 +67,11 @@ export async function connect(network: Network): Promise<{ sdk: Any; rpc: Any; n
 
 /** Their genesis wants one input of exactly escrow + fee. Ordinary wallets do not hold that, so make it. */
 async function carve(rpc: Any, sdk: Any, sk: string, network: Network, amount: bigint) {
-  const priv = new sdk.PrivateKey(sk);
-  const from = priv.toKeypair().toAddress(new sdk.NetworkId(network)).toString();
-  const { entries } = await rpc.getUtxosByAddresses([from]);
-  if (entries.length === 0) throw new Error(`nothing to spend at ${from}`);
-  const src = entries.reduce((a: Any, b: Any) => (b.amount > a.amount ? b : a));
-  if (src.amount < amount + CARVE_FEE) throw new Error(`largest UTXO ${src.amount} cannot fund ${amount} plus fee`);
-  const tx = sdk.createTransaction([src], [{ address: from, amount }, { address: from, amount: src.amount - amount - CARVE_FEE }], 0n, undefined, 0);
-  tx.version = 1;
-  tx.gas = 0n;
-  for (const i of tx.inputs) { i.sigOpCount = 0; i.computeBudget = 10; }
-  tx.finalize();
-  const { transactionId } = await rpc.submitTransaction({ transaction: sdk.signTransaction(tx, [priv], true), allowOrphan: false });
+  const from = new sdk.PrivateKey(sk).toKeypair().toAddress(new sdk.NetworkId(network)).toString();
+  const { txid } = await spendWallet(rpc, sdk, sk, network, [{ address: from, amount }]);
   const landed = await awaitUtxo(rpc, from, amount);
   if (!landed) throw new Error('the carved UTXO never appeared');
-  return { txid: String(transactionId), index: Number(landed.outpoint.index), amount };
+  return { txid, index: Number(landed.outpoint.index), amount };
 }
 
 /** BUYER: open a channel with a seller. Written to disk before this returns. */

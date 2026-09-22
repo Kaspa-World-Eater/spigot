@@ -117,15 +117,24 @@ channel's timeout. metered decides each bill by two-sided count; the rail pays i
 
 ## Status
 
-Runs end to end on testnet-10, through the kaspa-x402 escrow:
+Runs end to end on testnet-10, through the kaspa-x402 escrow (2026-09-22; every id links to the
+explorer, and `docs/proofs/<txid>.json` holds the transaction itself, written the moment the node
+accepted it):
 
-- A buyer opened a **0.2 KAS channel** (genesis `b518a530…`), bought a **200,008-byte** file billed
-  to it in 4 babels for **0.04000160 KAS**, delivered byte-identical to the source.
-- Every babel was **vouchered with its countersignature**; the seller **claimed** `3422d275…`,
-  taking 0.035 KAS (the bill less the claim fee) with **0.16 KAS left in the channel** to spend or
-  refund.
+- A buyer opened a **0.2 KAS channel** (genesis [`ab37363250487bc145c5aa21b3ba405941824cf684eb94587593388e4a326945`](https://explorer-tn10.kaspa.org/txs/ab37363250487bc145c5aa21b3ba405941824cf684eb94587593388e4a326945),
+  covenantId `9952c222f1deab59e7a652c8e9bfd7cb80bf20ea2e3173ecc10f5589f4f21a69`), bought a **200,008-byte** file
+  billed to it in 4 babels for **0.04000160 KAS**, delivered byte-identical to the source.
+- Every babel was **vouchered with its countersignature**; the seller **claimed**
+  [`25f8e5893212819299f3a38a5abc5fa75e9a974c871fcb366b8c6d1323f29ef8`](https://explorer-tn10.kaspa.org/txs/25f8e5893212819299f3a38a5abc5fa75e9a974c871fcb366b8c6d1323f29ef8),
+  taking 0.03500160 KAS (the bill less the 0.005 claim fee) with **0.1599984 KAS left in the channel**.
+- After the channel's timeout the buyer **refunded** the remainder:
+  [`59396e51eeb1fd440608467a33c14d873c60e3b53a433808386b882be2bb9e2d`](https://explorer-tn10.kaspa.org/txs/59396e51eeb1fd440608467a33c14d873c60e3b53a433808386b882be2bb9e2d),
+  0.1549984 KAS back (the remainder less the refund fee).
 - A seller that under-delivered **cannot** claim the reservation: refused by the builder, the
   accounting, and the escrow script.
+
+An earlier run (2026-09-11) proved the same thing, but its ids no longer resolve on the public
+testnet-10 index, and an id nobody can fetch is not a proof. That is why the proofs are archived now.
 
 Not on mainnet, deliberately: the kaspa-x402 escrow is alpha and unaudited for mainnet funds.
 
